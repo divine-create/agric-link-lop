@@ -68,45 +68,47 @@ All documentation is available in the `/docs` folder and can be viewed as a stat
 
 ```
 AgriLink-LOP/
-├── docs/
-│   ├── business/
+├── docs/                        # All documentation
+│   ├── business/                # Platform overview and business model
 │   │   ├── platform-overview.md
 │   │   ├── business-model.md
 │   │   └── market-analysis.md
-│   ├── financial/
+│   ├── financial/               # Financial projections and unit economics
 │   │   └── financial-projections.md
-│   ├── go-to-market/
+│   ├── go-to-market/            # Go-to-market strategy and expansion plan
 │   │   └── go-to-market-strategy.md
-│   ├── technical/
+│   ├── technical/               # System architecture and decision engine
 │   │   ├── architecture.md
 │   │   └── decision-engine.md
-│   ├── mvp/
+│   ├── mvp/                     # MVP roadmap and specifications
 │   │   └── mvp-plan.md
-│   ├── api/
+│   ├── api/                     # REST API reference
 │   │   └── api-reference.md
-│   ├── database/
+│   ├── database/                # Database schema and data models
 │   │   └── schema.md
-│   ├── integrations/
+│   ├── integrations/            # AgriLink and third-party integration guides
 │   │   ├── agrilink.md
 │   │   ├── provider-onboarding.md
 │   │   └── third-party.md
-│   ├── operations/
+│   ├── operations/              # Operations manual and SOPs
 │   │   ├── operations-manual.md
 │   │   ├── tracking.md
 │   │   └── risk-management.md
-│   ├── deployment/
+│   ├── deployment/              # Infrastructure and CI/CD setup
 │   │   └── deployment-guide.md
-│   ├── team/
+│   ├── team/                    # Team structure and hiring plan
 │   │   └── team-structure.md
-│   ├── legal/
+│   ├── legal/                   # Legal and compliance documentation
 │   │   └── compliance.md
-│   └── assets/
+│   └── assets/                  # Images, diagrams, and styling
 └── README.md
 ```
 
 ---
 
 ## How LOP Works
+
+When a delivery request is initiated — whether from AgriLink or another integrated platform — it flows through the following stages:
 
 ```
 1. Request Intake      →  Pickup, drop-off, package type, urgency submitted
@@ -117,13 +119,15 @@ AgriLink-LOP/
 6. Completion & Feedback → Performance data recorded for continuous improvement
 ```
 
+This entire process is **automated**, reducing manual coordination and significantly improving delivery reliability.
+
 ---
 
 ## Platform Principles
 
 | Principle | Description |
 |---|---|
-| **Asset-Light** | LOP owns no vehicles — scales without capital constraints |
+| **Asset-Light** | LOP owns no vehicles and employs no drivers — scales without capital constraints |
 | **API-First** | Fully programmable; any business can embed logistics into their workflow |
 | **Intelligence-Driven** | Algorithms continuously improve routing, pricing, and provider selection |
 | **Provider-Agnostic** | Dynamically selects from a network of partners for flexibility and resilience |
@@ -153,22 +157,42 @@ npx md-to-pdf docs/business/platform-overview.md
 
 ---
 
+## Growth Roadmap
+
+LOP is designed to evolve from powering AgriLink into a **pan-African logistics backbone**, supporting industries including:
+
+- 🌾 Agricultural distribution (farm-to-market)
+- 🛒 E-commerce and retail
+- 🍔 Food delivery
+- 🏥 Healthcare logistics
+- 🏭 Manufacturing supply chains
+
+Planned platform enhancements include **predictive analytics**, **dynamic pricing models**, **route optimization algorithms**, and **real-time risk and fraud detection systems**.
+
+---
+
 ## About AgriLink & LOP
 
 **AgriLink** is a digital marketplace platform connecting Nigerian farmers directly with buyers — restaurants, hotels, retailers, processors, and exporters.
 
 **LOP** is the logistics infrastructure layer that makes AgriLink's distribution possible, while remaining an independent, extensible platform available to any business requiring delivery capabilities in emerging markets.
 
-> **Vision:** To become the intelligent logistics backbone of commerce in emerging African markets.
+> **Vision:** To become the intelligent logistics backbone of commerce in emerging African markets — transforming delivery from a fragmented challenge into programmable, scalable infrastructure.
 
 > **Mission:** To connect logistics demand and supply through a unified platform that reduces operational complexity, improves delivery reliability, and enables businesses of all sizes to scale.
 
-**Headquarters:** Nigeria
+**Headquarters:** Nigeria  
 **Primary Integration:** [AgriLink Platform](https://agrilink.ng)
+
+---
+
+## Contact
+
+For partnership inquiries, provider onboarding, or integration support, please refer to the [integrations documentation](docs/integrations/third-party.md) or reach out via the AgriLink platform.
 
 ---
 
 ## License
 
-**Proprietary — All Rights Reserved**
+**Proprietary — All Rights Reserved**  
 AgriLink Logistics Orchestration Platform (LOP) — *Powering the Future of Commerce in Emerging Markets*
