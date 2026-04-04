@@ -1,0 +1,40 @@
+title: AgriLink LOP Documentation
+description: Logistics Orchestration Platform — Business & Technical Documentation
+baseurl: "/lop-docs"
+url: "https://agrilink.ng"
+
+theme: just-the-docs
+
+# Navigation
+nav_sort: case_insensitive
+
+# Footer
+footer_content: "© 2025 AgriLink Technologies. All Rights Reserved."
+
+# Search
+search_enabled: true
+
+# Aux links
+aux_links:
+  "AgriLink Platform": "https://agrilink.ng"
+
+# Back to top
+back_to_top: true
+back_to_top_text: "Back to top"
+
+# Heading anchors
+heading_anchors: true
+
+# Collections
+collections:
+  docs:
+    permalink: "/:collection/:path/"
+    output: true
+
+# Exclude from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor
+  - "*.sh"
