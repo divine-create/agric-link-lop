@@ -1,31 +1,8 @@
-# Jekyll build output
-docs/_site/
-docs/.jekyll-cache/
-docs/.jekyll-metadata
-
-# Ruby / Bundler
-docs/vendor/
-.bundle/
-
-# Node
 node_modules/
-npm-debug.log
-yarn-error.log
-
-# Generated PDFs
-*.pdf
-
-# OS
+build/
+dist/
+coverage/
 .DS_Store
-Thumbs.db
-
-# Editor
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Environment
-.env
-.env.*
+*.log
+.env*
 !.env.example
