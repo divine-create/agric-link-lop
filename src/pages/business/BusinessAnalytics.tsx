@@ -3,10 +3,8 @@ import { motion } from 'motion/react';
 import { 
   BarChart3, 
   TrendingUp, 
-  Users, 
   Map, 
   Zap, 
-  Clock, 
   CheckCircle2, 
   AlertCircle,
   ArrowUpRight,
@@ -29,9 +27,9 @@ import {
   PieChart, 
   Pie 
 } from 'recharts';
-import DashboardLayout from '../components/DashboardLayout';
-import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
+import DashboardLayout from '../../components/DashboardLayout';
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
 import { cn } from '@/src/lib/utils';
 
 const volumeData = [
@@ -59,13 +57,10 @@ const categoryData = [
   { name: 'Manufacturing', value: 100, color: '#81B29A' },
 ];
 
-export default function AnalyticsPage() {
-  const userType = window.location.pathname.includes('metrics') ? 'provider' : 'business';
-
+export default function BusinessAnalytics() {
   return (
-    <DashboardLayout userType={userType}>
+    <DashboardLayout userType="business">
       <div className="max-w-[1200px] mx-auto space-y-10">
-        
         {/* Header Section */}
         <section className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div>
@@ -119,8 +114,6 @@ export default function AnalyticsPage() {
 
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
-          {/* Main Volume Chart */}
           <Card className="p-8 space-y-8 bg-surface-low border-0 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
@@ -152,7 +145,6 @@ export default function AnalyticsPage() {
             </div>
           </Card>
 
-          {/* Corridor Efficiency */}
           <Card className="p-8 space-y-8 bg-surface-low border-0 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
@@ -176,79 +168,7 @@ export default function AnalyticsPage() {
               </ResponsiveContainer>
             </div>
           </Card>
-
         </div>
-
-        {/* Bottom Tier (Insights & Distribution) */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8">
-           
-           <section className="space-y-6">
-              <h2 className="font-display font-bold text-2xl px-2">Operational Insights</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {[
-                  { title: 'Corridor Congestion', desc: 'Lagos-Abuja route is seeing a 15% increase in transit time due to construction. Recommend shifting to night tiers.', type: 'warning', icon: AlertCircle },
-                  { title: 'Cost Optimization', desc: 'Consolidating agricultural dispatches on Tuesdays can reduce infrastructure overhead by ₦42,000/week.', type: 'success', icon: Zap },
-                ].map((insight, idx) => (
-                  <Card key={idx} className={cn(
-                    "p-8 border-l-4",
-                    insight.type === 'warning' ? "border-secondary bg-surface-low" : "border-primary bg-surface-low"
-                  )}>
-                    <div className="flex gap-6">
-                      <div className={cn(
-                        "p-3 rounded-xl h-fit",
-                        insight.type === 'warning' ? "bg-secondary/10 text-secondary" : "bg-primary/10 text-primary"
-                      )}>
-                        <insight.icon size={24} />
-                      </div>
-                      <div className="space-y-2">
-                        <h4 className="font-display font-bold text-lg leading-tight">{insight.title}</h4>
-                        <p className="text-sm text-on-surface/50 leading-relaxed font-sans">{insight.desc}</p>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-           </section>
-
-           <Card className="p-8 space-y-8 bg-surface-high border-0 shadow-sm">
-             <h3 className="font-display font-bold text-xl">Payload Distribution</h3>
-             <div className="h-[240px] w-full flex items-center justify-center">
-               <ResponsiveContainer width="100%" height="100%">
-                 <PieChart>
-                   <Pie
-                     data={categoryData}
-                     cx="50%"
-                     cy="50%"
-                     innerRadius={60}
-                     outerRadius={80}
-                     paddingAngle={8}
-                     dataKey="value"
-                   >
-                     {categoryData.map((entry, index) => (
-                       <Cell key={`cell-${index}`} fill={entry.color} />
-                     ))}
-                   </Pie>
-                   <Tooltip 
-                     contentStyle={{ backgroundColor: '#fbfbe2', border: 'none', borderRadius: '12px' }}
-                   />
-                 </PieChart>
-               </ResponsiveContainer>
-             </div>
-             <div className="space-y-3">
-                {categoryData.map((cat, idx) => (
-                  <div key={idx} className="flex justify-between items-center px-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }}></div>
-                      <span className="text-sm font-sans font-bold text-on-surface/60">{cat.name}</span>
-                    </div>
-                    <span className="text-sm font-display font-bold">{Math.round((cat.value / 1000) * 100)}%</span>
-                  </div>
-                ))}
-             </div>
-           </Card>
-
-        </div>
-
       </div>
     </DashboardLayout>
   );

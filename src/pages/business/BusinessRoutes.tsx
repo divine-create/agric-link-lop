@@ -14,12 +14,12 @@ import {
   Filter,
   MoreVertical
 } from 'lucide-react';
-import DashboardLayout from '../components/DashboardLayout';
-import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
+import DashboardLayout from '../../components/DashboardLayout';
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
 import { cn } from '@/src/lib/utils';
 
-export default function RouteManagement() {
+export default function BusinessRoutes() {
   const [activeTab, setActiveTab] = useState<'corridors' | 'nodes'>('corridors');
 
   const corridors = [

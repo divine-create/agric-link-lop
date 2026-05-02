@@ -1,7 +1,9 @@
 import * as React from 'react';
-import DashboardLayout from '../components/DashboardLayout';
-import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import DashboardLayout from '../../components/DashboardLayout';
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
 import { motion } from 'motion/react';
 import { 
   Package, 
@@ -22,6 +24,8 @@ import { Link } from 'react-router-dom';
 import { cn } from '@/src/lib/utils';
 
 export default function IndividualDashboard() {
+  const [trackId, setTrackId] = useState('');
+  const navigate = useNavigate();
   const activeDeliveries = [
     { id: 'LOP-7721', destination: 'Victoria Island → Abuja', status: 'In Transit', eta: 'Tomorrow, 2:00 PM', icon: Package },
     { id: 'LOP-7745', destination: 'Surulere → Ikeja', status: 'Delivered', eta: 'Delivered today', icon: Gift },
@@ -55,7 +59,9 @@ export default function IndividualDashboard() {
            <section className="space-y-8">
               <div className="flex items-center justify-between px-2">
                  <h2 className="font-display font-bold text-2xl">Track & Manage</h2>
-                 <Button variant="ghost" size="sm" className="text-on-surface/40"><History size={16} className="mr-2" /> Full History</Button>
+                  <Link to="/individual/deliveries">
+                    <Button variant="ghost" size="sm" className="text-on-surface/40"><History size={16} className="mr-2" /> Full History</Button>
+                  </Link>
               </div>
 
               <div className="space-y-4">
@@ -99,16 +105,24 @@ export default function IndividualDashboard() {
                        <h3 className="font-display font-bold text-xl mb-2">Track by ID</h3>
                        <p className="text-sm opacity-70">Instantly locate any parcel moving through the network.</p>
                     </div>
-                    <div className="flex-1 w-full relative">
-                       <input 
-                        type="text" 
-                        placeholder="Enter LOP ID (Ex: LOP-9021)"
-                        className="w-full pl-6 pr-14 py-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 focus:ring-2 focus:ring-white/20 font-display font-bold placeholder:text-white/40 text-white"
-                       />
-                       <button className="absolute right-2 top-1/2 -translate-y-1/2 p-3 bg-white text-primary rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-all">
-                         <Search size={20} />
-                       </button>
-                    </div>
+                       <form 
+                         className="flex-1 w-full relative"
+                         onSubmit={(e) => {
+                           e.preventDefault();
+                           if (trackId) navigate(`/track/${trackId}`);
+                         }}
+                       >
+                         <input 
+                          type="text" 
+                          placeholder="Enter LOP ID (Ex: LOP-9021)"
+                          value={trackId}
+                          onChange={(e) => setTrackId(e.target.value)}
+                          className="w-full pl-6 pr-14 py-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 focus:ring-2 focus:ring-white/20 font-display font-bold placeholder:text-white/40 text-white"
+                         />
+                         <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 p-3 bg-white text-primary rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-all">
+                           <Search size={20} />
+                         </button>
+                       </form>
                  </div>
               </Card>
            </section>

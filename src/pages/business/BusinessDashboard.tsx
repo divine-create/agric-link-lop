@@ -1,14 +1,15 @@
-import DashboardLayout from '../components/DashboardLayout';
-import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
+import DashboardLayout from '../../components/DashboardLayout';
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
 import { motion } from 'motion/react';
-import { TrendingUp, Truck, CheckCircle2, Wallet, Plus, ArrowUpRight, MapPin, AlertCircle, Zap, Box } from 'lucide-react';
+import { TrendingUp, Truck, CheckCircle2, Wallet, Plus, ArrowUpRight, MapPin, AlertCircle, Zap, Box, Users, BarChart3, Settings } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/src/lib/utils';
 
 export default function BusinessDashboard() {
   const stats = [
     { label: 'Active Shipments', value: '142', change: '+12%', icon: Truck, color: 'text-primary' },
+    { label: 'Fleet Drivers', value: '24', change: '+3', icon: Users, color: 'text-secondary' },
     { label: 'Delivery Success', value: '99.4%', change: '+0.2%', icon: CheckCircle2, color: 'text-primary' },
     { label: 'Platform Spend', value: '₦4.2M', change: '+18.4%', icon: Wallet, color: 'text-secondary' },
   ];
@@ -30,7 +31,9 @@ export default function BusinessDashboard() {
             <p className="font-sans text-on-surface/60 max-w-sm">Manage your global logistics pipeline. Monitoring 142 active nodes across Nigeria.</p>
           </div>
           <div className="flex gap-4">
-            <Button variant="secondary" size="md">Bulk Upload</Button>
+            <Link to="/templates">
+              <Button variant="secondary" size="md">Templates</Button>
+            </Link>
             <Link to="/new-delivery">
               <Button size="md" className="gap-2"><Plus size={20} /> New Dispatch</Button>
             </Link>
@@ -38,7 +41,7 @@ export default function BusinessDashboard() {
         </section>
 
         {/* Stats Grid */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map((stat, idx) => (
             <Card key={idx} className="p-8 group hover:bg-surface-container transition-colors">
               <div className="flex justify-between items-start mb-6">
@@ -55,6 +58,53 @@ export default function BusinessDashboard() {
               </div>
             </Card>
           ))}
+        </section>
+
+        {/* Fleet Management Quick Access */}
+        <section className="space-y-6">
+          <div className="flex justify-between items-center px-2">
+            <h2 className="font-display font-bold text-2xl">Fleet Management</h2>
+            <Link to="/fleet" className="text-xs font-bold text-primary uppercase tracking-[0.1em] hover:tracking-[0.2em] transition-all flex items-center gap-1">
+              View Full Fleet <ArrowUpRight size={12} />
+            </Link>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              { label: 'Active Drivers', value: '18', icon: Users, color: 'text-green-600', bg: 'bg-green-100' },
+              { label: 'Avg Performance', value: '96%', icon: BarChart3, color: 'text-blue-600', bg: 'bg-blue-100' },
+              { label: 'Fleet Earnings', value: '₦338K', icon: Wallet, color: 'text-purple-600', bg: 'bg-purple-100' },
+            ].map((item, idx) => (
+              <Card key={idx} className="p-6 hover:bg-surface-container transition-colors">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className={cn("p-2 rounded-lg", item.bg, item.color)}>
+                    <item.icon size={18} />
+                  </div>
+                </div>
+                <p className="text-2xl font-display font-extrabold text-on-surface">{item.value}</p>
+                <p className="text-xs text-on-surface/40 font-bold uppercase tracking-widest mt-1">{item.label}</p>
+              </Card>
+            ))}
+          </div>
+
+          {/* Quick Fleet Actions */}
+          <div className="flex gap-3 flex-wrap">
+            <Link to="/fleet">
+              <Button size="sm" className="gap-2">
+                <Users size={14} /> Manage Drivers
+              </Button>
+            </Link>
+            <Link to="/fleet">
+              <Button variant="secondary" size="sm" className="gap-2">
+                <Wallet size={14} /> Payout Management
+              </Button>
+            </Link>
+            <Link to="/fleet">
+              <Button variant="secondary" size="sm" className="gap-2">
+                <BarChart3 size={14} /> View Performance
+              </Button>
+            </Link>
+          </div>
         </section>
 
         {/* Main Content Layout (Editorial 65/35) */}
@@ -99,21 +149,47 @@ export default function BusinessDashboard() {
             </div>
           </section>
 
-          {/* Network Insights (Sidebar) */}
-          <aside className="space-y-8">
-             <Card className="bg-primary-container text-white p-8 adire-texture overflow-hidden relative">
-               <div className="relative z-10">
-                 <h3 className="font-display font-bold text-xl mb-4">Network Health</h3>
-                 <div className="flex items-center gap-4 mb-6">
-                    <div className="flex-1 h-2 bg-white/20 rounded-full overflow-hidden">
-                      <div className="h-full bg-on-primary-container w-[94%]"></div>
-                    </div>
-                    <span className="text-sm font-bold">94%</span>
-                 </div>
-                 <p className="text-xs opacity-70 mb-6">The Lagos-Ibadan corridor is seeing high volume. Route optimization active in 12 nodes.</p>
-                 <Button variant="primary" className="bg-white text-primary-container w-full py-3">View Detailed Logs</Button>
-               </div>
-             </Card>
+           {/* Network Insights (Sidebar) */}
+           <aside className="space-y-8">
+              <Card className="bg-primary-container text-white p-8 adire-texture overflow-hidden relative">
+                <div className="relative z-10">
+                  <h3 className="font-display font-bold text-xl mb-4">Network Health</h3>
+                  <div className="flex items-center gap-4 mb-6">
+                     <div className="flex-1 h-2 bg-white/20 rounded-full overflow-hidden">
+                       <div className="h-full bg-on-primary-container w-[94%]"></div>
+                     </div>
+                     <span className="text-sm font-bold">94%</span>
+                  </div>
+                  <p className="text-xs opacity-70 mb-6">The Lagos-Ibadan corridor is seeing high volume. Route optimization active in 12 nodes.</p>
+                  <Button variant="primary" className="bg-white text-primary-container w-full py-3">View Detailed Logs</Button>
+                </div>
+              </Card>
+
+              <Card className="bg-surface-high p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <p className="text-xs font-bold text-on-surface/40 uppercase tracking-[0.2em]">Fleet Overview</p>
+                  <Link to="/fleet" className="text-xs text-primary font-bold hover:underline">Manage</Link>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-on-surface/70">Active Drivers</span>
+                    <span className="font-bold text-on-surface">18</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-on-surface/70">Pending Payouts</span>
+                    <span className="font-bold text-orange-500">₦29.3K</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-on-surface/70">This Month Earnings</span>
+                    <span className="font-bold text-green-500">₦338K</span>
+                  </div>
+                </div>
+                <Link to="/fleet" className="mt-4 block">
+                  <Button variant="secondary" size="sm" className="w-full gap-2">
+                    <Users size={14} /> Go to Fleet Management
+                  </Button>
+                </Link>
+              </Card>
 
              <div className="space-y-6">
                 <h3 className="text-xs font-bold text-on-surface/40 uppercase tracking-[0.2em] px-2">Network Insights</h3>

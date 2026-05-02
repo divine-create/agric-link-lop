@@ -53,7 +53,7 @@ export default function LandingPage() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-                <Link to="/login">
+                <Link to="/register/business">
                   <Button size="lg" className="w-full sm:w-auto h-14 px-10 text-base shadow-2xl shadow-primary/20 group">
                     Get Started <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={20} />
                   </Button>

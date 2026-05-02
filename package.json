@@ -1,20 +1,4 @@
 {
-<<<<<<< HEAD
-  "name": "agrilink-lop-docs",
-  "version": "1.0.0",
-  "description": "AgriLink Logistics Orchestration Platform documentation",
-  "scripts": {
-    "pdf:overview": "npx md-to-pdf docs/business/platform-overview.md",
-    "pdf:business-model": "npx md-to-pdf docs/business/business-model.md",
-    "pdf:api": "npx md-to-pdf docs/api/api-reference.md",
-    "pdf:all": "find docs -name '*.md' | xargs -I{} npx md-to-pdf {}"
-  },
-  "devDependencies": {
-    "md-to-pdf": "^5.2.4"
-  },
-  "license": "UNLICENSED",
-  "private": true
-=======
   "name": "react-example",
   "private": true,
   "version": "0.0.0",
@@ -53,5 +37,4 @@
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }
->>>>>>> 1524596 (Initial commit)
 }

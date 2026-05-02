@@ -1,6 +1,6 @@
-import DashboardLayout from '../components/DashboardLayout';
-import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
+import DashboardLayout from '../../components/DashboardLayout';
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
 import { motion } from 'motion/react';
 import { Star, Wallet, Package, MapPin, ArrowRight, TrendingUp, Clock, ShieldCheck, Filter } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -153,8 +153,10 @@ export default function ProviderDashboard() {
             </div>
             
             <div className="text-center pt-8">
-               <Button variant="ghost" className="text-on-surface/40 gap-2">View All Network Opportunities <ArrowRight size={16} /></Button>
-            </div>
+               <Link to="/deliveries">
+                 <Button variant="ghost" className="text-on-surface/40 gap-2">View All Network Opportunities <ArrowRight size={16} /></Button>
+               </Link>
+             </div>
           </section>
 
           {/* Sidebar: Metrics & Accomplishments */}

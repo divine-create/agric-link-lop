@@ -177,7 +177,11 @@ export default function LoginPage() {
                 </Button>
 
                 <div className="flex items-center justify-between px-1">
-                   <Link to="/register" className="text-xs font-bold text-primary uppercase tracking-widest hover:underline underline-offset-4">Create New Account</Link>
+                    <div className="text-xs font-bold uppercase tracking-widest">
+                      <Link to="/register/business" className="text-primary hover:underline underline-offset-4">Business</Link>
+                      <span className="text-on-surface/20 mx-2">|</span>
+                      <Link to="/register/provider" className="text-primary hover:underline underline-offset-4">Provider</Link>
+                    </div>
                    <a href="#" className="text-xs font-bold text-on-surface/40 uppercase tracking-widest hover:text-on-surface transition-colors">Forgot Credentials?</a>
                 </div>
               </form>

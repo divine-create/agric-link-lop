@@ -18,14 +18,14 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-8">
           <Link to="/pricing" className="text-sm font-sans font-medium text-on-surface hover:text-primary transition-colors">Pricing</Link>
           <Link to="/docs" className="text-sm font-sans font-medium text-on-surface hover:text-primary transition-colors">API Docs</Link>
-          <Link to="/track/DEMOSHIP" className="text-sm font-sans font-medium text-on-surface hover:text-primary transition-colors">Tracking</Link>
+          <Link to="/track/DEMO" className="text-sm font-sans font-medium text-on-surface hover:text-primary transition-colors">Tracking</Link>
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
           <Link to="/login" className="hidden sm:inline-flex">
             <Button variant="ghost" size="sm">Sign In</Button>
           </Link>
-          <Link to="/login">
+          <Link to="/register/business">
             <Button size="sm">Get Started</Button>
           </Link>
           
@@ -49,10 +49,10 @@ export default function Navbar() {
             >
               <Link to="/pricing" onClick={() => setIsOpen(false)} className="text-lg font-display font-bold text-on-surface px-4 py-2 hover:bg-surface-highest rounded-xl transition-colors">Pricing</Link>
               <Link to="/docs" onClick={() => setIsOpen(false)} className="text-lg font-display font-bold text-on-surface px-4 py-2 hover:bg-surface-highest rounded-xl transition-colors">API Docs</Link>
-              <Link to="/track/DEMOSHIP" onClick={() => setIsOpen(false)} className="text-lg font-display font-bold text-on-surface px-4 py-2 hover:bg-surface-highest rounded-xl transition-colors">Tracking</Link>
+              <Link to="/track/DEMO" onClick={() => setIsOpen(false)} className="text-lg font-display font-bold text-on-surface px-4 py-2 hover:bg-surface-highest rounded-xl transition-colors">Tracking</Link>
               <hr className="border-outline-variant/10" />
-              <Link to="/login" onClick={() => setIsOpen(false)}>
-                <Button variant="ghost" className="w-full justify-start text-lg h-14">Sign In</Button>
+              <Link to="/register/business" onClick={() => setIsOpen(false)}>
+                <Button className="w-full justify-start text-lg h-14">Get Started</Button>
               </Link>
             </motion.div>
           )}
