@@ -1,0 +1,121 @@
+// Provider Registry Edge Function
+// Covers ALS-48 (registration), ALS-49 (ops approval), ALS-70 (availability toggle), ALS-71 (list+Haversine)
+
+import { corsHeaders, corsResponse, json, error } from '../_shared/cors.ts';
+import { verifyJwt, adminClient } from '../_shared/auth.ts';
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return corsResponse();
+
+  const url = new URL(req.url);
+  const segments = url.pathname.replace('/providers', '').split('/').filter(Boolean);
+  const providerId = segments[0];
+  const action = segments[1]; // 'availability' | 'verify'
+
+  const jwt = await verifyJwt(req);
+  const isAdmin = jwt?.role === 'admin';
+  const db = adminClient();
+
+  // ─── POST /providers/register (public — no auth required) ───────────────────
+  if (req.method === 'POST' && segments[0] === 'register') {
+    const body = await req.json();
+    const { name, phone, email, vehicle_types, bank_account_number, bank_code, coverage_zones } = body;
+
+    if (!name || !phone || !vehicle_types?.length) {
+      return error('INVALID_REQUEST', 'name, phone, and vehicle_types are required', 400);
+    }
+
+    const { data: provider, error: insertErr } = await db
+      .from('providers')
+      .insert({ name, phone, email, vehicle_types, bank_account_number, bank_code, coverage_zones, status: 'pending_review' })
+      .select().single();
+
+    if (insertErr) return error('INTERNAL_ERROR', insertErr.message, 500);
+
+    // Create availability record
+    await db.from('provider_availability').insert({ provider_id: provider.id });
+
+    return json({ provider_id: provider.id, status: 'pending_review' }, 201);
+  }
+
+  // ─── POST /providers/:id/verify (admin only — ALS-49) ────────────────────
+  if (req.method === 'POST' && providerId && action === 'verify') {
+    if (!isAdmin) return error('FORBIDDEN', 'Admin access required', 403);
+
+    const { approved, reason } = await req.json();
+    const newStatus = approved ? 'active' : 'suspended';
+
+    await db.from('providers').update({ status: newStatus }).eq('id', providerId);
+
+    // Notify provider via SMS
+    EdgeRuntime.waitUntil(
+      fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/notifications`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+        },
+        body: JSON.stringify({ event: approved ? 'provider.approved' : 'provider.rejected', provider_id: providerId, reason }),
+      })
+    );
+
+    return json({ provider_id: providerId, status: newStatus });
+  }
+
+  // ─── PATCH /providers/availability (ALS-70) ────────────────────────────
+  if (req.method === 'PATCH' && segments[0] === 'availability') {
+    if (!jwt || jwt.role !== 'provider') return error('FORBIDDEN', 'Provider auth required', 403);
+
+    const { is_available, latitude, longitude } = await req.json();
+    await db.from('provider_availability').update({
+      is_available,
+      current_lat: latitude,
+      current_lng: longitude,
+      last_ping_at: new Date().toISOString(),
+    }).eq('provider_id', jwt.providerId);
+
+    return json({ provider_id: jwt.providerId, is_available });
+  }
+
+  // ─── GET /providers (list with Haversine filter — ALS-71) ────────────────
+  if (req.method === 'GET' && !providerId) {
+    const lat = parseFloat(url.searchParams.get('latitude') ?? '0');
+    const lng = parseFloat(url.searchParams.get('longitude') ?? '0');
+    const radiusKm = parseFloat(url.searchParams.get('radius_km') ?? '20');
+
+    const { data: providers } = await db
+      .from('providers')
+      .select('*, provider_availability(*)')
+      .eq('status', 'active');
+
+    const nearby = (providers ?? [])
+      .map((p: any) => {
+        const avail = p.provider_availability?.[0];
+        const dist = avail?.current_lat
+          ? haversine(lat, lng, avail.current_lat, avail.current_lng)
+          : Infinity;
+        return { ...p, distance_km: Math.round(dist * 10) / 10, available: avail?.is_available ?? false };
+      })
+      .filter((p: any) => p.distance_km <= radiusKm)
+      .sort((a: any, b: any) => a.distance_km - b.distance_km);
+
+    return json({ providers: nearby, total: nearby.length });
+  }
+
+  // ─── GET /providers/:id ─────────────────────────────────────────────
+  if (req.method === 'GET' && providerId) {
+    const { data } = await db.from('providers').select('*, provider_availability(*)').eq('id', providerId).single();
+    if (!data) return error('NOT_FOUND', 'Provider not found', 404);
+    return json(data);
+  }
+
+  return error('NOT_FOUND', 'Route not found', 404);
+});
+
+function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
