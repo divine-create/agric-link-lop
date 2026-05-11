@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'claude/**', 'feature/**']
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-typecheck:
+    name: Lint & Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Typecheck shared package
+        run: pnpm --filter @agrilink/shared exec tsc --noEmit
+        continue-on-error: true  # remove once tsconfig added to shared
+
+      - name: Typecheck web app
+        run: pnpm run lint
+
+  supabase-validate:
+    name: Validate Supabase Migrations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local Supabase
+        run: supabase start
+
+      - name: Run migrations
+        run: supabase db reset --local
+
+      - name: Stop Supabase
+        run: supabase stop
+        if: always()
