@@ -29,7 +29,7 @@ export async function verifyJwt(req: Request): Promise<AuthContext | null> {
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) return null;
 
-  const meta = user.user_metadata;
+  const meta = user.app_metadata;
   return {
     role: meta.role ?? 'client',
     clientId: meta.client_id,
