@@ -1,0 +1,31 @@
+{
+  "name": "@lop/web",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf .next out"
+  },
+  "dependencies": {
+    "@lop/shared": "workspace:*",
+    "@supabase/supabase-js": "^2.49.4",
+    "next": "14.2.29",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "@types/react": "^18.3.22",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.5.2",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "14.2.29",
+    "typescript": "~5.8.2",
+    "vitest": "^3.2.2"
+  }
+}
