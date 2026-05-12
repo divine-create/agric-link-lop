@@ -1,0 +1,56 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-web:
+    name: Deploy Web App (Vercel)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+
+  deploy-supabase-functions:
+    name: Deploy Edge Functions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy all Edge Functions
+        run: |
+          supabase functions deploy deliveries      --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+          supabase functions deploy providers       --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+          supabase functions deploy decision-engine --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+          supabase functions deploy tracking        --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+          supabase functions deploy webhooks        --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+          supabase functions deploy payments        --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+          supabase functions deploy settlement      --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+          supabase functions deploy notifications   --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+          supabase functions deploy external-api    --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
