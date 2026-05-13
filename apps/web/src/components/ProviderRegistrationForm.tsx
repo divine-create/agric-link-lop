@@ -100,7 +100,7 @@ export function ProviderRegistrationForm() {
       <div style={styles.card}>
         <h2 style={styles.heading}>Upload KYC Documents</h2>
         <p style={styles.subtext}>
-          Upload your ID, driver's licence, and vehicle papers (PDF or image).
+          Upload your ID, driver&apos;s licence, and vehicle papers (PDF or image).
         </p>
         <form onSubmit={handleKycUpload} style={styles.form}>
           <input
