@@ -184,3 +184,7 @@ export interface GeoJSON {
   type: string;
   coordinates: unknown;
 }
+
+// Backwards-compat aliases
+export type Urgency = DeliveryUrgency;
+export type UserRole = 'admin' | 'client' | 'provider';
