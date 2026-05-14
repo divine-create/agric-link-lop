@@ -3,6 +3,7 @@
 
 import { json } from '../_shared/cors.ts';
 import { adminClient } from '../_shared/auth.ts';
+import { withMetrics } from '../_shared/metrics.ts';
 
 const WEBHOOK_EVENTS: Record<string, string> = {
   assigned:   'delivery.assigned',
@@ -13,7 +14,7 @@ const WEBHOOK_EVENTS: Record<string, string> = {
   cancelled:  'delivery.cancelled',
 };
 
-Deno.serve(async (req) => {
+Deno.serve(withMetrics('webhooks', async (req) => {
   const { delivery_id, previous_status, new_status } = await req.json();
   const db = adminClient();
 
@@ -86,7 +87,7 @@ Deno.serve(async (req) => {
   }
 
   return json({ delivered, attempts: 3, last_status: lastStatus });
-});
+}));
 
 async function sign(payload: string, secret: string): Promise<string> {
   const key = await crypto.subtle.importKey(

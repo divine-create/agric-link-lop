@@ -3,8 +3,9 @@
 
 import { corsHeaders, corsResponse, json, error } from '../_shared/cors.ts';
 import { verifyJwt, adminClient } from '../_shared/auth.ts';
+import { withMetrics } from '../_shared/metrics.ts';
 
-Deno.serve(async (req) => {
+Deno.serve(withMetrics('providers', async (req) => {
   if (req.method === 'OPTIONS') return corsResponse();
 
   const url = new URL(req.url);
@@ -110,7 +111,7 @@ Deno.serve(async (req) => {
   }
 
   return error('NOT_FOUND', 'Route not found', 404);
-});
+}));
 
 function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371;

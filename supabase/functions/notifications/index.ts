@@ -3,13 +3,14 @@
 
 import { json } from '../_shared/cors.ts';
 import { adminClient } from '../_shared/auth.ts';
+import { withMetrics } from '../_shared/metrics.ts';
 
 const TERMII_API_KEY  = Deno.env.get('TERMII_API_KEY')!;
 const TERMII_BASE_URL = Deno.env.get('TERMII_BASE_URL') ?? 'https://api.ng.termii.com';
 const TERMII_SENDER   = Deno.env.get('TERMII_SENDER_ID') ?? 'AgriLink';
 const EXPO_ACCESS_TOKEN = Deno.env.get('EXPO_ACCESS_TOKEN')!;
 
-Deno.serve(async (req) => {
+Deno.serve(withMetrics('notifications', async (req) => {
   const { event, delivery_id, provider_id, reason } = await req.json();
   const db = adminClient();
 
@@ -84,7 +85,7 @@ Deno.serve(async (req) => {
   }
 
   return json({ sent: true });
-});
+}));
 
 async function sendSms(phone: string, message: string) {
   if (!TERMII_API_KEY) return; // skip in local dev

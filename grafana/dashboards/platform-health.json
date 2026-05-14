@@ -1,0 +1,160 @@
+{
+  "title": "Platform Health",
+  "uid": "lop-platform-health",
+  "tags": ["lop", "edge-functions"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "fn",
+        "label": "Function",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "query": "label_values(lop_http_requests_total, fn)",
+        "multi": true,
+        "includeAll": true,
+        "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Request Rate (req/min)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "sum by (fn) (rate(lop_http_requests_total{fn=~\"$fn\"}[5m]) * 60)",
+          "legendFormat": "{{fn}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqpm", "color": { "mode": "palette-classic" } }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Error Rate (%)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "sum by (fn) (rate(lop_http_errors_total{fn=~\"$fn\"}[5m])) / sum by (fn) (rate(lop_http_requests_total{fn=~\"$fn\"}[5m])) * 100",
+          "legendFormat": "{{fn}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 5 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "p50 Latency (ms)",
+      "type": "gauge",
+      "gridPos": { "x": 0, "y": 8, "w": 6, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "avg(lop_http_request_duration_ms)",
+          "legendFormat": "p50"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1000 },
+              { "color": "red", "value": 3000 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Total Requests (last hour)",
+      "type": "stat",
+      "gridPos": { "x": 6, "y": 8, "w": 6, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "sum(increase(lop_http_requests_total[1h]))",
+          "legendFormat": "Requests"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 5,
+      "title": "Total Errors (last hour)",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 8, "w": 6, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "sum(increase(lop_http_errors_total[1h]))",
+          "legendFormat": "Errors"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Latency per Function (ms)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 14, "w": 24, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "lop_http_request_duration_ms{fn=~\"$fn\"}",
+          "legendFormat": "{{fn}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms" } }
+    },
+    {
+      "id": 7,
+      "title": "Edge Function Logs",
+      "type": "logs",
+      "gridPos": { "x": 0, "y": 22, "w": 24, "h": 10 },
+      "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
+      "targets": [
+        {
+          "expr": "{source=\"edge-functions\", fn=~\"$fn\"} |= ``",
+          "legendFormat": ""
+        }
+      ],
+      "options": { "showTime": true, "sortOrder": "Descending" }
+    }
+  ]
+}

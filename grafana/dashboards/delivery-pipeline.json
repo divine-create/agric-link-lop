@@ -1,0 +1,143 @@
+{
+  "title": "Delivery Pipeline",
+  "uid": "lop-delivery-pipeline",
+  "tags": ["lop", "deliveries"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Deliveries Created (rate/hr)",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "sum(increase(lop_delivery_created_total[1h]))", "legendFormat": "Created" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 2,
+      "title": "Deliveries Assigned (rate/hr)",
+      "type": "stat",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "sum(increase(lop_delivery_assigned_total[1h]))", "legendFormat": "Assigned" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 3,
+      "title": "Assignment SLA — p50 (target < 5s)",
+      "type": "gauge",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "avg(lop_assignment_duration_ms) / 1000", "legendFormat": "p50 (s)" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 3 },
+              { "color": "red", "value": 5 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Assignment Success Rate (%)",
+      "type": "gauge",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "sum(increase(lop_delivery_assigned_total[6h])) / sum(increase(lop_delivery_created_total[6h])) * 100",
+          "legendFormat": "Success %"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 80 },
+              { "color": "green", "value": 95 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Delivery Volume Over Time",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 4, "w": 16, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "rate(lop_delivery_created_total[10m]) * 600", "legendFormat": "Created (per 10m)" },
+        { "expr": "rate(lop_delivery_assigned_total[10m]) * 600", "legendFormat": "Assigned (per 10m)" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 6,
+      "title": "Assignment SLA Over Time",
+      "type": "timeseries",
+      "gridPos": { "x": 16, "y": 4, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "avg(lop_assignment_duration_ms) / 1000", "legendFormat": "Avg assignment time (s)" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 5 }
+            ]
+          },
+          "custom": { "thresholdsStyle": { "mode": "line+area" } }
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Decision Engine Errors",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "rate(lop_http_errors_total{fn=\"decision-engine\"}[5m]) * 300",
+          "legendFormat": "Errors (per 5m)"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 8,
+      "title": "Delivery Logs (decision-engine)",
+      "type": "logs",
+      "gridPos": { "x": 0, "y": 18, "w": 24, "h": 10 },
+      "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
+      "targets": [
+        { "expr": "{source=\"edge-functions\", fn=\"decision-engine\"} |= ``", "legendFormat": "" }
+      ],
+      "options": { "showTime": true, "sortOrder": "Descending" }
+    }
+  ]
+}

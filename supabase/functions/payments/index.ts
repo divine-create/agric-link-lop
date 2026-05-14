@@ -3,11 +3,12 @@
 
 import { corsHeaders, corsResponse, json, error } from '../_shared/cors.ts';
 import { verifyJwt, adminClient } from '../_shared/auth.ts';
+import { withMetrics } from '../_shared/metrics.ts';
 
 const PAYSTACK_SECRET = Deno.env.get('PAYSTACK_SECRET_KEY')!;
 const PAYSTACK_WEBHOOK_SECRET = Deno.env.get('PAYSTACK_WEBHOOK_SECRET')!;
 
-Deno.serve(async (req) => {
+Deno.serve(withMetrics('payments', async (req) => {
   if (req.method === 'OPTIONS') return corsResponse();
 
   const url = new URL(req.url);
@@ -101,7 +102,7 @@ Deno.serve(async (req) => {
   }
 
   return error('NOT_FOUND', 'Route not found', 404);
-});
+}));
 
 async function paystackPost(path: string, body: object) {
   const res = await fetch(`https://api.paystack.co${path}`, {

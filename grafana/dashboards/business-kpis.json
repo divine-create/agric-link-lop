@@ -1,0 +1,111 @@
+{
+  "title": "Business KPIs",
+  "uid": "lop-business-kpis",
+  "tags": ["lop", "business", "kpis"],
+  "timezone": "browser",
+  "refresh": "5m",
+  "time": { "from": "now-24h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Revenue (NGN, last 24h)",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "sum(increase(lop_payment_amount_ngn_total[24h]))", "legendFormat": "Revenue" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "currencyNGN" } }
+    },
+    {
+      "id": 2,
+      "title": "Deliveries Completed (last 24h)",
+      "type": "stat",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "sum(increase(lop_delivery_completed_total[24h]))", "legendFormat": "Completed" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 3,
+      "title": "Active Providers",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "lop_active_providers_count", "legendFormat": "Active" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 3 },
+              { "color": "green", "value": 10 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Providers Registered (last 24h)",
+      "type": "stat",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "sum(increase(lop_provider_registered_total[24h]))", "legendFormat": "Registered" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 5,
+      "title": "Daily Delivery Volume",
+      "type": "barchart",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "sum(increase(lop_delivery_created_total[1h]))", "legendFormat": "Deliveries/hr" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 6,
+      "title": "Revenue Trend (NGN/hr)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "sum(rate(lop_payment_amount_ngn_total[1h]) * 3600)", "legendFormat": "NGN/hr" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "currencyNGN" } }
+    },
+    {
+      "id": 7,
+      "title": "SMS Notifications Sent",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "sum(rate(lop_sms_sent_total[10m]) * 600)", "legendFormat": "SMS/10m" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 8,
+      "title": "Settlement Payouts (NGN, last 7d)",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "sum(increase(lop_payout_amount_ngn_total[168h]))", "legendFormat": "Payouts" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "currencyNGN" } }
+    }
+  ]
+}

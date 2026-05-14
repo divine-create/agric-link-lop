@@ -1,0 +1,155 @@
+# ALS-243: Grafana alerting rules — LOP platform
+# Deploy via: grafana/provision.sh
+
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: lop-platform
+    folder: LOP Alerts
+    interval: 1m
+    rules:
+
+      - uid: lop-high-error-rate
+        title: "Edge Function Error Rate > 5%"
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: ${DS_PROMETHEUS}
+            model:
+              expr: >
+                sum(rate(lop_http_errors_total[5m])) /
+                sum(rate(lop_http_requests_total[5m])) * 100
+              intervalMs: 15000
+              maxDataPoints: 43200
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              conditions:
+                - evaluator: { params: [5], type: gt }
+                  query: { params: ["A"] }
+                  reducer: { params: [], type: last }
+                  type: query
+        noDataState: NoData
+        execErrState: Alerting
+        for: 2m
+        annotations:
+          summary: "Edge Function error rate is {{ $values.A.Value | printf \"%.1f\" }}%"
+          runbook_url: "https://github.com/sustainagro-dev/AgriLink-Logistics/wiki/runbooks/high-error-rate"
+        labels:
+          severity: critical
+          team: ops
+
+      - uid: lop-assignment-sla
+        title: "Assignment SLA p50 > 5s"
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: ${DS_PROMETHEUS}
+            model:
+              expr: avg(lop_assignment_duration_ms) / 1000
+              intervalMs: 15000
+              maxDataPoints: 43200
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              conditions:
+                - evaluator: { params: [5], type: gt }
+                  query: { params: ["A"] }
+                  reducer: { params: [], type: last }
+                  type: query
+        noDataState: NoData
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          summary: "Provider assignment is taking {{ $values.A.Value | printf \"%.1f\" }}s (SLA: 5s)"
+          runbook_url: "https://github.com/sustainagro-dev/AgriLink-Logistics/wiki/runbooks/assignment-sla"
+        labels:
+          severity: warning
+          team: ops
+
+      - uid: lop-no-active-providers
+        title: "No Active Providers"
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: ${DS_PROMETHEUS}
+            model:
+              expr: lop_active_providers_count
+              intervalMs: 15000
+              maxDataPoints: 43200
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              conditions:
+                - evaluator: { params: [1], type: lt }
+                  query: { params: ["A"] }
+                  reducer: { params: [], type: last }
+                  type: query
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          summary: "No active providers available — deliveries cannot be assigned"
+        labels:
+          severity: critical
+          team: ops
+
+      - uid: lop-high-latency
+        title: "Edge Function Latency > 3s"
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: ${DS_PROMETHEUS}
+            model:
+              expr: max(lop_http_request_duration_ms)
+              intervalMs: 15000
+              maxDataPoints: 43200
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              conditions:
+                - evaluator: { params: [3000], type: gt }
+                  query: { params: ["A"] }
+                  reducer: { params: [], type: last }
+                  type: query
+        noDataState: NoData
+        execErrState: Alerting
+        for: 3m
+        annotations:
+          summary: "Edge function latency is {{ $values.A.Value | printf \"%.0f\" }}ms (threshold: 3000ms)"
+        labels:
+          severity: warning
+          team: ops
+
+      - uid: lop-payment-errors
+        title: "Payment Function Errors"
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: ${DS_PROMETHEUS}
+            model:
+              expr: sum(increase(lop_http_errors_total{fn="payments"}[5m]))
+              intervalMs: 15000
+              maxDataPoints: 43200
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              conditions:
+                - evaluator: { params: [0], type: gt }
+                  query: { params: ["A"] }
+                  reducer: { params: [], type: last }
+                  type: query
+        noDataState: NoData
+        execErrState: Alerting
+        for: 1m
+        annotations:
+          summary: "Payment function errors detected — check Paystack integration"
+        labels:
+          severity: critical
+          team: ops
