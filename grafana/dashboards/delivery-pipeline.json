@@ -8,34 +8,29 @@
   "panels": [
     {
       "id": 1,
-      "title": "Deliveries Created (rate/hr)",
+      "title": "Deliveries Created (last hour)",
       "type": "stat",
       "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
       "targets": [
-        { "expr": "sum(increase(lop_delivery_created_total[1h]))", "legendFormat": "Created" }
+        {
+          "expr": "sum(count_over_time({source=\"edge-functions\", fn=\"deliveries\"} | json | type=\"metric\" | method=\"POST\" | status=201 [1h]))",
+          "legendFormat": "Created"
+        }
       ],
       "fieldConfig": { "defaults": { "unit": "short" } }
     },
     {
       "id": 2,
-      "title": "Deliveries Assigned (rate/hr)",
-      "type": "stat",
-      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "targets": [
-        { "expr": "sum(increase(lop_delivery_assigned_total[1h]))", "legendFormat": "Assigned" }
-      ],
-      "fieldConfig": { "defaults": { "unit": "short" } }
-    },
-    {
-      "id": 3,
-      "title": "Assignment SLA — p50 (target < 5s)",
+      "title": "Assignment SLA — avg (target < 5s)",
       "type": "gauge",
-      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
       "targets": [
-        { "expr": "avg(lop_assignment_duration_ms) / 1000", "legendFormat": "p50 (s)" }
+        {
+          "expr": "avg(avg_over_time({source=\"edge-functions\", fn=\"decision-engine\"} | json | type=\"metric\" | unwrap duration_ms [5m])) / 1000",
+          "legendFormat": "Avg (s)"
+        }
       ],
       "fieldConfig": {
         "defaults": {
@@ -53,89 +48,77 @@
       }
     },
     {
-      "id": 4,
-      "title": "Assignment Success Rate (%)",
-      "type": "gauge",
-      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "id": 3,
+      "title": "Decision Engine Errors (last hour)",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
       "targets": [
         {
-          "expr": "sum(increase(lop_delivery_assigned_total[6h])) / sum(increase(lop_delivery_created_total[6h])) * 100",
-          "legendFormat": "Success %"
+          "expr": "sum(count_over_time({source=\"edge-functions\", fn=\"decision-engine\"} | json | type=\"metric\" | error=\"true\" [1h]))",
+          "legendFormat": "Errors"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "percent",
+          "unit": "short",
           "thresholds": {
             "mode": "absolute",
-            "steps": [
-              { "color": "red", "value": null },
-              { "color": "yellow", "value": 80 },
-              { "color": "green", "value": 95 }
-            ]
+            "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }]
           },
           "color": { "mode": "thresholds" }
         }
       }
     },
     {
-      "id": 5,
-      "title": "Delivery Volume Over Time",
+      "id": 4,
+      "title": "Delivery Request Volume",
       "type": "timeseries",
       "gridPos": { "x": 0, "y": 4, "w": 16, "h": 8 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
       "targets": [
-        { "expr": "rate(lop_delivery_created_total[10m]) * 600", "legendFormat": "Created (per 10m)" },
-        { "expr": "rate(lop_delivery_assigned_total[10m]) * 600", "legendFormat": "Assigned (per 10m)" }
+        {
+          "expr": "sum(rate({source=\"edge-functions\", fn=\"deliveries\"} | json | type=\"metric\" [$__rate_interval]) * 600)",
+          "legendFormat": "Requests per 10m"
+        },
+        {
+          "expr": "sum(rate({source=\"edge-functions\", fn=\"deliveries\"} | json | type=\"metric\" | status=201 [$__rate_interval]) * 600)",
+          "legendFormat": "Created per 10m"
+        }
       ],
       "fieldConfig": { "defaults": { "unit": "short" } }
     },
     {
-      "id": 6,
-      "title": "Assignment SLA Over Time",
+      "id": 5,
+      "title": "Assignment Time Over Time",
       "type": "timeseries",
       "gridPos": { "x": 16, "y": 4, "w": 8, "h": 8 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
       "targets": [
-        { "expr": "avg(lop_assignment_duration_ms) / 1000", "legendFormat": "Avg assignment time (s)" }
+        {
+          "expr": "avg(avg_over_time({source=\"edge-functions\", fn=\"decision-engine\"} | json | type=\"metric\" | unwrap duration_ms [$__rate_interval])) / 1000",
+          "legendFormat": "Avg assignment time (s)"
+        }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "s",
           "thresholds": {
             "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "red", "value": 5 }
-            ]
+            "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 5 }]
           },
           "custom": { "thresholdsStyle": { "mode": "line+area" } }
         }
       }
     },
     {
-      "id": 7,
-      "title": "Decision Engine Errors",
-      "type": "timeseries",
-      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 6 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "targets": [
-        {
-          "expr": "rate(lop_http_errors_total{fn=\"decision-engine\"}[5m]) * 300",
-          "legendFormat": "Errors (per 5m)"
-        }
-      ],
-      "fieldConfig": { "defaults": { "unit": "short" } }
-    },
-    {
-      "id": 8,
-      "title": "Delivery Logs (decision-engine)",
+      "id": 6,
+      "title": "Delivery + Decision Engine Logs",
       "type": "logs",
-      "gridPos": { "x": 0, "y": 18, "w": 24, "h": 10 },
-      "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
+      "gridPos": { "x": 0, "y": 12, "w": 24, "h": 10 },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
       "targets": [
-        { "expr": "{source=\"edge-functions\", fn=\"decision-engine\"} |= ``", "legendFormat": "" }
+        { "expr": "{source=\"edge-functions\", fn=~\"deliveries|decision-engine\"}", "legendFormat": "" }
       ],
       "options": { "showTime": true, "sortOrder": "Descending" }
     }

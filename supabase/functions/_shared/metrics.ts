@@ -1,16 +1,6 @@
-// ALS-238: Prometheus Pushgateway metrics helper for Edge Functions
-
-const PUSHGATEWAY_URL = Deno.env.get('PROMETHEUS_PUSHGATEWAY_URL');
-const PUSHGATEWAY_USER = Deno.env.get('PROMETHEUS_PUSHGATEWAY_USER');
-const PUSHGATEWAY_PASS = Deno.env.get('PROMETHEUS_PUSHGATEWAY_PASS');
-
-export interface RequestMetrics {
-  fn: string;
-  method: string;
-  route: string;
-  status: number;
-  durationMs: number;
-}
+// ALS-238: Structured metrics logging for Edge Functions
+// Emits JSON log lines captured by Supabase → Loki log drain.
+// Query in Grafana using LogQL: {source="edge-functions"} | json | type="metric"
 
 export interface Counter {
   name: string;
@@ -18,50 +8,29 @@ export interface Counter {
   value?: number;
 }
 
-function fmtLabels(labels: Record<string, string>): string {
-  return Object.entries(labels)
-    .map(([k, v]) => `${k}="${v.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`)
-    .join(',');
-}
+function emitMetric(
+  fn: string,
+  method: string,
+  route: string,
+  status: number,
+  durationMs: number,
+  counters: Counter[],
+) {
+  const base = {
+    type: 'metric',
+    fn,
+    method,
+    route,
+    status,
+    duration_ms: durationMs,
+    error: status >= 500,
+    timestamp: new Date().toISOString(),
+  };
 
-function buildPayload(req: RequestMetrics, counters: Counter[]): string {
-  const reqLabels = fmtLabels({ fn: req.fn, method: req.method, route: req.route, status: String(req.status) });
-  const fnLabels = fmtLabels({ fn: req.fn });
-
-  const lines = [
-    `# TYPE lop_http_requests_total counter`,
-    `lop_http_requests_total{${reqLabels}} 1`,
-    `# TYPE lop_http_request_duration_ms gauge`,
-    `lop_http_request_duration_ms{${fnLabels}} ${req.durationMs}`,
-  ];
-
-  if (req.status >= 500) {
-    lines.push(`# TYPE lop_http_errors_total counter`, `lop_http_errors_total{${fnLabels}} 1`);
-  }
+  console.log(JSON.stringify(base));
 
   for (const c of counters) {
-    const lblStr = c.labels ? `{${fmtLabels(c.labels)}}` : '';
-    lines.push(`# TYPE ${c.name} counter`, `${c.name}${lblStr} ${c.value ?? 1}`);
-  }
-
-  return lines.join('\n') + '\n';
-}
-
-export async function pushMetrics(req: RequestMetrics, counters: Counter[] = []): Promise<void> {
-  if (!PUSHGATEWAY_URL) return;
-
-  const payload = buildPayload(req, counters);
-  const url = `${PUSHGATEWAY_URL}/metrics/job/lop_edge/instance/${req.fn}`;
-  const headers: Record<string, string> = { 'Content-Type': 'text/plain' };
-
-  if (PUSHGATEWAY_USER && PUSHGATEWAY_PASS) {
-    headers['Authorization'] = `Basic ${btoa(`${PUSHGATEWAY_USER}:${PUSHGATEWAY_PASS}`)}`;
-  }
-
-  try {
-    await fetch(url, { method: 'POST', headers, body: payload });
-  } catch {
-    // Non-blocking — never fail a request over metrics
+    console.log(JSON.stringify({ type: 'metric', name: c.name, value: c.value ?? 1, ...c.labels }));
   }
 }
 
@@ -83,14 +52,12 @@ export function withMetrics(
     try {
       res = await handler(req);
     } catch (err) {
-      const durationMs = Date.now() - start;
-      pushMetrics({ fn: fnName, method: req.method, route, status: 500, durationMs }).catch(() => {});
+      emitMetric(fnName, req.method, route, 500, Date.now() - start, []);
       throw err;
     }
 
     const durationMs = Date.now() - start;
-    const counters = extraCounters?.(req, res) ?? [];
-    pushMetrics({ fn: fnName, method: req.method, route, status: res.status, durationMs }, counters).catch(() => {});
+    emitMetric(fnName, req.method, route, res.status, durationMs, extraCounters?.(req, res) ?? []);
 
     return res;
   };

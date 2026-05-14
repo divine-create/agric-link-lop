@@ -1,111 +1,105 @@
 {
   "title": "Business KPIs",
   "uid": "lop-business-kpis",
-  "tags": ["lop", "business", "kpis"],
+  "tags": ["lop", "business"],
   "timezone": "browser",
   "refresh": "5m",
   "time": { "from": "now-24h", "to": "now" },
   "panels": [
     {
       "id": 1,
-      "title": "Revenue (NGN, last 24h)",
+      "title": "Deliveries Created (last 24h)",
       "type": "stat",
       "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
       "targets": [
-        { "expr": "sum(increase(lop_payment_amount_ngn_total[24h]))", "legendFormat": "Revenue" }
+        {
+          "expr": "sum(count_over_time({source=\"edge-functions\", fn=\"deliveries\"} | json | type=\"metric\" | method=\"POST\" | status=201 [24h]))",
+          "legendFormat": "Deliveries"
+        }
       ],
-      "fieldConfig": { "defaults": { "unit": "currencyNGN" } }
+      "fieldConfig": { "defaults": { "unit": "short" } }
     },
     {
       "id": 2,
-      "title": "Deliveries Completed (last 24h)",
+      "title": "Providers Registered (last 24h)",
       "type": "stat",
       "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
       "targets": [
-        { "expr": "sum(increase(lop_delivery_completed_total[24h]))", "legendFormat": "Completed" }
+        {
+          "expr": "sum(count_over_time({source=\"edge-functions\", fn=\"providers\"} | json | type=\"metric\" | method=\"POST\" | status=201 [24h]))",
+          "legendFormat": "Registered"
+        }
       ],
       "fieldConfig": { "defaults": { "unit": "short" } }
     },
     {
       "id": 3,
-      "title": "Active Providers",
+      "title": "SMS Notifications Sent (last 24h)",
       "type": "stat",
       "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
       "targets": [
-        { "expr": "lop_active_providers_count", "legendFormat": "Active" }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "red", "value": null },
-              { "color": "yellow", "value": 3 },
-              { "color": "green", "value": 10 }
-            ]
-          },
-          "color": { "mode": "thresholds" }
+        {
+          "expr": "sum(count_over_time({source=\"edge-functions\", fn=\"notifications\"} | json | type=\"metric\" | status=200 [24h]))",
+          "legendFormat": "Sent"
         }
-      }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
     },
     {
       "id": 4,
-      "title": "Providers Registered (last 24h)",
+      "title": "Payment Webhooks Processed (last 24h)",
       "type": "stat",
       "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
       "targets": [
-        { "expr": "sum(increase(lop_provider_registered_total[24h]))", "legendFormat": "Registered" }
+        {
+          "expr": "sum(count_over_time({source=\"edge-functions\", fn=\"payments\"} | json | type=\"metric\" | status=200 [24h]))",
+          "legendFormat": "Payments"
+        }
       ],
       "fieldConfig": { "defaults": { "unit": "short" } }
     },
     {
       "id": 5,
-      "title": "Daily Delivery Volume",
-      "type": "barchart",
-      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "title": "Delivery Volume (per hour)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 4, "w": 14, "h": 8 },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
       "targets": [
-        { "expr": "sum(increase(lop_delivery_created_total[1h]))", "legendFormat": "Deliveries/hr" }
+        {
+          "expr": "sum(rate({source=\"edge-functions\", fn=\"deliveries\"} | json | type=\"metric\" | method=\"POST\" | status=201 [$__rate_interval]) * 3600)",
+          "legendFormat": "Deliveries/hr"
+        }
       ],
       "fieldConfig": { "defaults": { "unit": "short" } }
     },
     {
       "id": 6,
-      "title": "Revenue Trend (NGN/hr)",
+      "title": "Platform Activity (all functions)",
       "type": "timeseries",
-      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "x": 14, "y": 4, "w": 10, "h": 8 },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
       "targets": [
-        { "expr": "sum(rate(lop_payment_amount_ngn_total[1h]) * 3600)", "legendFormat": "NGN/hr" }
+        {
+          "expr": "sum by (fn) (rate({source=\"edge-functions\"} | json | type=\"metric\" [$__rate_interval]) * 60)",
+          "legendFormat": "{{fn}}"
+        }
       ],
-      "fieldConfig": { "defaults": { "unit": "currencyNGN" } }
+      "fieldConfig": { "defaults": { "unit": "reqpm" } }
     },
     {
       "id": 7,
-      "title": "SMS Notifications Sent",
-      "type": "timeseries",
-      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 6 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "title": "All Platform Logs",
+      "type": "logs",
+      "gridPos": { "x": 0, "y": 12, "w": 24, "h": 10 },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
       "targets": [
-        { "expr": "sum(rate(lop_sms_sent_total[10m]) * 600)", "legendFormat": "SMS/10m" }
+        { "expr": "{source=\"edge-functions\"}", "legendFormat": "" }
       ],
-      "fieldConfig": { "defaults": { "unit": "short" } }
-    },
-    {
-      "id": 8,
-      "title": "Settlement Payouts (NGN, last 7d)",
-      "type": "stat",
-      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 6 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "targets": [
-        { "expr": "sum(increase(lop_payout_amount_ngn_total[168h]))", "legendFormat": "Payouts" }
-      ],
-      "fieldConfig": { "defaults": { "unit": "currencyNGN" } }
+      "options": { "showTime": true, "sortOrder": "Descending" }
     }
   ]
 }
