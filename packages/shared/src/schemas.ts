@@ -37,4 +37,4 @@ export const TrackingEventSchema = z.object({
 
 export type CreateDelivery = z.infer<typeof CreateDeliverySchema>
 export type ProviderLocation = z.infer<typeof ProviderLocationSchema>
-export type TrackingEvent = z.infer<typeof TrackingEventSchema>
+export type TrackingEventInput = z.infer<typeof TrackingEventSchema>
