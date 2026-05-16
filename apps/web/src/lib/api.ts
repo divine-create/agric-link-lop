@@ -11,8 +11,10 @@ export async function registerProvider(payload: {
   phone: string
   email?: string
   vehicle_types: string[]
+  cold_chain_certified?: boolean
   bank_account_number?: string
   bank_code?: string
+  coverage_zones?: Record<string, unknown>
 }) {
   const res = await fetch(`${FUNCTIONS_URL}/providers/register`, {
     method: 'POST',
