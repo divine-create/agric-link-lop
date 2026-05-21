@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
   // ─── POST /providers/register (public — no auth required) ───────────────────
   if (req.method === 'POST' && segments[0] === 'register') {
     const body = await req.json();
-    const { name, phone, email, vehicle_types, bank_account_number, bank_code, coverage_zones } = body;
+    const { name, phone, email, vehicle_types, cold_chain_certified, bank_account_number, bank_code, coverage_zones } = body;
 
     if (!name || !phone || !vehicle_types?.length) {
       return error('INVALID_REQUEST', 'name, phone, and vehicle_types are required', 400);
@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
 
     const { data: provider, error: insertErr } = await db
       .from('providers')
-      .insert({ name, phone, email, vehicle_types, bank_account_number, bank_code, coverage_zones, status: 'pending_review' })
+      .insert({ name, phone, email, vehicle_types, cold_chain_certified: cold_chain_certified ?? false, bank_account_number, bank_code, coverage_zones, status: 'pending_review' })
       .select().single();
 
     if (insertErr) return error('INTERNAL_ERROR', insertErr.message, 500);
@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
     if (!isAdmin) return error('FORBIDDEN', 'Admin access required', 403);
 
     const { approved, reason } = await req.json();
-    const newStatus = approved ? 'active' : 'suspended';
+    const newStatus = approved ? 'active' : 'inactive';
 
     await db.from('providers').update({ status: newStatus }).eq('id', providerId);
 
@@ -77,16 +77,22 @@ Deno.serve(async (req) => {
     return json({ provider_id: jwt.providerId, is_available });
   }
 
-  // ─── GET /providers (list with Haversine filter — ALS-71) ────────────────
+  // ─── GET /providers (list with optional status filter + Haversine — ALS-71) ──
   if (req.method === 'GET' && !providerId) {
     const lat = parseFloat(url.searchParams.get('latitude') ?? '0');
     const lng = parseFloat(url.searchParams.get('longitude') ?? '0');
     const radiusKm = parseFloat(url.searchParams.get('radius_km') ?? '20');
+    const statusFilter = url.searchParams.get('status') ?? 'active';
+
+    // Admin-only: allow listing pending_review providers
+    if (statusFilter !== 'active' && !isAdmin) {
+      return error('FORBIDDEN', 'Admin access required to filter by non-active status', 403);
+    }
 
     const { data: providers } = await db
       .from('providers')
       .select('*, provider_availability(*)')
-      .eq('status', 'active');
+      .eq('status', statusFilter);
 
     const nearby = (providers ?? [])
       .map((p: any) => {
