@@ -4,12 +4,13 @@
 
 import { json } from '../_shared/cors.ts';
 import { adminClient } from '../_shared/auth.ts';
+import { withMetrics } from '../_shared/metrics.ts';
 
 const COMMISSION_RATES: Record<string, number> = {
   starter: 0.08, growth: 0.065, enterprise: 0.045,
 };
 
-Deno.serve(async (_req) => {
+Deno.serve(withMetrics('settlement', async (_req) => {
   const db = adminClient();
   const now = new Date();
 
@@ -91,4 +92,4 @@ Deno.serve(async (_req) => {
     total_deliveries: deliveries.length,
     total_payout:     totalPayout,
   });
-});
+}));

@@ -4,6 +4,7 @@
 
 import { json, error } from '../_shared/cors.ts';
 import { adminClient } from '../_shared/auth.ts';
+import { withMetrics } from '../_shared/metrics.ts';
 
 const MIN_SCORE = 60;
 const ACCEPTANCE_TIMER_MS = 120_000;
@@ -18,7 +19,7 @@ const WEIGHTS = {
   proximity: 0.30, reliability: 0.25, cost: 0.20, capacity: 0.15, load: 0.10,
 };
 
-Deno.serve(async (req) => {
+Deno.serve(withMetrics('decision-engine', async (req) => {
   const { delivery_id, excluded_provider_ids = [], attempt = 1 } = await req.json();
   const db = adminClient();
 
@@ -158,7 +159,7 @@ Deno.serve(async (req) => {
   }
 
   return json({ assigned: true, provider_id: providerId, score: top.score });
-});
+}));
 
 async function escalateToOps(db: any, deliveryId: string, reason: string) {
   // Insert a note into tracking_events for ops visibility
