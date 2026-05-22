@@ -1,11 +1,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { withMetrics } from '../_shared/metrics.ts'
 
 interface HookEvent {
   user_id: string
   claims: Record<string, unknown>
 }
 
-Deno.serve(async (req: Request) => {
+Deno.serve(withMetrics('auth-hook', async (req: Request) => {
   const event: HookEvent = await req.json()
 
   const supabase = createClient(
@@ -36,4 +37,4 @@ Deno.serve(async (req: Request) => {
     JSON.stringify({ ...event, claims }),
     { headers: { 'Content-Type': 'application/json' } },
   )
-})
+}))

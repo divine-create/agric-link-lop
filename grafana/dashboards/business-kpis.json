@@ -1,0 +1,105 @@
+{
+  "title": "Business KPIs",
+  "uid": "lop-business-kpis",
+  "tags": ["lop", "business"],
+  "timezone": "browser",
+  "refresh": "5m",
+  "time": { "from": "now-24h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Deliveries Created (last 24h)",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({source=\"edge-functions\", fn=\"deliveries\"} | json | type=\"metric\" | method=\"POST\" | status=201 [24h]))",
+          "legendFormat": "Deliveries"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 2,
+      "title": "Providers Registered (last 24h)",
+      "type": "stat",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({source=\"edge-functions\", fn=\"providers\"} | json | type=\"metric\" | method=\"POST\" | status=201 [24h]))",
+          "legendFormat": "Registered"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 3,
+      "title": "SMS Notifications Sent (last 24h)",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({source=\"edge-functions\", fn=\"notifications\"} | json | type=\"metric\" | status=200 [24h]))",
+          "legendFormat": "Sent"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 4,
+      "title": "Payment Webhooks Processed (last 24h)",
+      "type": "stat",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({source=\"edge-functions\", fn=\"payments\"} | json | type=\"metric\" | status=200 [24h]))",
+          "legendFormat": "Payments"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 5,
+      "title": "Delivery Volume (per hour)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 4, "w": 14, "h": 8 },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
+      "targets": [
+        {
+          "expr": "sum(rate({source=\"edge-functions\", fn=\"deliveries\"} | json | type=\"metric\" | method=\"POST\" | status=201 [$__rate_interval]) * 3600)",
+          "legendFormat": "Deliveries/hr"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 6,
+      "title": "Platform Activity (all functions)",
+      "type": "timeseries",
+      "gridPos": { "x": 14, "y": 4, "w": 10, "h": 8 },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
+      "targets": [
+        {
+          "expr": "sum by (fn) (rate({source=\"edge-functions\"} | json | type=\"metric\" [$__rate_interval]) * 60)",
+          "legendFormat": "{{fn}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqpm" } }
+    },
+    {
+      "id": 7,
+      "title": "All Platform Logs",
+      "type": "logs",
+      "gridPos": { "x": 0, "y": 12, "w": 24, "h": 10 },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
+      "targets": [
+        { "expr": "{source=\"edge-functions\"}", "legendFormat": "" }
+      ],
+      "options": { "showTime": true, "sortOrder": "Descending" }
+    }
+  ]
+}
