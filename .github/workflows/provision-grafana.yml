@@ -1,0 +1,23 @@
+name: Provision Grafana
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'grafana/**'
+
+jobs:
+  provision:
+    name: Deploy Dashboards & Alerts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Provision Grafana
+        env:
+          GRAFANA_CLOUD_URL: ${{ secrets.GRAFANA_CLOUD_URL }}
+          GRAFANA_CLOUD_API_KEY: ${{ secrets.GRAFANA_CLOUD_API_KEY }}
+        run: bash grafana/provision.sh

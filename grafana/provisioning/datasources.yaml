@@ -1,0 +1,28 @@
+# Grafana datasource provisioning — LOP platform
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus-lop
+    access: proxy
+    url: "${PROMETHEUS_REMOTE_READ_URL}"
+    basicAuth: true
+    basicAuthUser: "${GRAFANA_CLOUD_PROMETHEUS_USER}"
+    secureJsonData:
+      basicAuthPassword: "${GRAFANA_CLOUD_API_KEY}"
+    jsonData:
+      httpMethod: POST
+      prometheusType: Prometheus
+      timeInterval: 15s
+    isDefault: true
+
+  - name: Loki
+    type: loki
+    uid: loki-lop
+    access: proxy
+    url: "${LOKI_URL}"
+    basicAuth: true
+    basicAuthUser: "${GRAFANA_CLOUD_LOKI_USER}"
+    secureJsonData:
+      basicAuthPassword: "${GRAFANA_CLOUD_API_KEY}"

@@ -5,8 +5,9 @@
 
 import { corsHeaders, corsResponse, json, error } from '../_shared/cors.ts';
 import { verifyJwt, adminClient } from '../_shared/auth.ts';
+import { withMetrics } from '../_shared/metrics.ts';
 
-Deno.serve(async (req) => {
+Deno.serve(withMetrics('tracking', async (req) => {
   if (req.method === 'OPTIONS') return corsResponse();
 
   const jwt = await verifyJwt(req);
@@ -62,4 +63,4 @@ Deno.serve(async (req) => {
   }
 
   return error('NOT_FOUND', 'Route not found', 404);
-});
+}));
