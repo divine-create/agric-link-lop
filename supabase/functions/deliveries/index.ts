@@ -205,6 +205,15 @@ Deno.serve(withMetrics('deliveries', async (req) => {
     }
 
     await db.from('deliveries').update({ status: 'cancelled' }).eq('id', deliveryId);
+
+    EdgeRuntime.waitUntil(
+      fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/notifications`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
+        body: JSON.stringify({ event: 'delivery.cancelled', delivery_id: deliveryId }),
+      })
+    );
+
     return json({ delivery_id: deliveryId, status: 'cancelled', cancelled_at: new Date().toISOString() });
   }
 
