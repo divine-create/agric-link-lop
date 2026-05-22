@@ -1,14 +1,13 @@
 // Decision Engine Edge Function
-// Covers ALS-43 (eligibility filter), ALS-44 (scoring + assignment),
-// ALS-45 (120s timer + retry), ALS-73 (perishability multiplier)
+// Covers ALS-17 (eligibility filter, scoring, assignment, retry timer)
 
-import { json, error } from '../_shared/cors.ts';
+import { json } from '../_shared/cors.ts';
 import { adminClient } from '../_shared/auth.ts';
 import { withMetrics } from '../_shared/metrics.ts';
 
 const MIN_SCORE = 60;
 const ACCEPTANCE_TIMER_MS = 120_000;
-const PERISHABLE_TIMER_MS =  60_000;
+const PERISHABLE_TIMER_MS = 60_000;
 const MAX_RETRIES = 3;
 
 const URGENCY_RADIUS: Record<string, number> = {
@@ -51,7 +50,7 @@ Deno.serve(withMetrics('decision-engine', async (req) => {
       if (delivery.requires_cold_chain && !p.cold_chain_certified) return false;
       const dist = haversine(
         avail.current_lat, avail.current_lng,
-        delivery.pickup_lat, delivery.pickup_lng
+        delivery.pickup_lat, delivery.pickup_lng,
       );
       return dist <= maxRadius;
     })
@@ -61,7 +60,7 @@ Deno.serve(withMetrics('decision-engine', async (req) => {
       distKm: haversine(
         p.provider_availability[0].current_lat,
         p.provider_availability[0].current_lng,
-        delivery.pickup_lat, delivery.pickup_lng
+        delivery.pickup_lat, delivery.pickup_lng,
       ),
     }));
 
@@ -73,23 +72,24 @@ Deno.serve(withMetrics('decision-engine', async (req) => {
   // Score each provider
   const scored = eligible.map((p: any) => {
     let proximityScore = Math.max(0, 1 - p.distKm / maxRadius) * 100;
-    // ALS-73: perishability urgency multiplier
     if (isPerishable) proximityScore = Math.min(100, proximityScore * 1.2);
 
     const reliabilityScore = Math.min(100, p.reliability_score);
-    const costScore = 80; // placeholder until dynamic quoting
+    const costScore = 80; // placeholder until dynamic quoting (ALS-TODO)
     const capacityScore = p.vehicle_types?.length > 0 ? 100 : 0;
     const loadScore = Math.max(0, 100 - p.avail.active_count * 20);
 
     return {
       provider: p,
-      score: proximityScore * WEIGHTS.proximity
-           + reliabilityScore * WEIGHTS.reliability
-           + costScore * WEIGHTS.cost
-           + capacityScore * WEIGHTS.capacity
-           + loadScore * WEIGHTS.load,
+      score:
+        proximityScore * WEIGHTS.proximity +
+        reliabilityScore * WEIGHTS.reliability +
+        costScore * WEIGHTS.cost +
+        capacityScore * WEIGHTS.capacity +
+        loadScore * WEIGHTS.load,
     };
-  }).filter((s: any) => s.score >= MIN_SCORE)
+  })
+    .filter((s: any) => s.score >= MIN_SCORE)
     .sort((a: any, b: any) => b.score - a.score);
 
   if (!scored.length) {
@@ -97,26 +97,33 @@ Deno.serve(withMetrics('decision-engine', async (req) => {
     return json({ assigned: false, reason: 'NO_PROVIDERS_AVAILABLE' });
   }
 
-  // A/B: 5% random assignment for learning
-  const top = Math.random() < 0.05
-    ? scored[Math.floor(Math.random() * Math.min(scored.length, 3))]
-    : scored[0];
+  // 5% random assignment for learning (A/B)
+  const top =
+    Math.random() < 0.05
+      ? scored[Math.floor(Math.random() * Math.min(scored.length, 3))]
+      : scored[0];
 
   const providerId = top.provider.id;
 
-  // Assign delivery
+  // Assign delivery + record status change
   await db.from('deliveries').update({
     provider_id: providerId,
     status: 'assigned',
     assigned_at: new Date().toISOString(),
   }).eq('id', delivery_id);
 
-  // Increment provider active_count
   await db.from('provider_availability')
     .update({ active_count: (top.provider.avail.active_count ?? 0) + 1 })
     .eq('provider_id', providerId);
 
-  // Notify provider via notifications function
+  await db.from('tracking_events').insert({
+    delivery_id,
+    event_type: 'status_change',
+    status: 'assigned',
+    metadata: { provider_id: providerId, score: top.score, attempt },
+  });
+
+  // Notify provider
   EdgeRuntime.waitUntil(
     fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/notifications`, {
       method: 'POST',
@@ -125,19 +132,20 @@ Deno.serve(withMetrics('decision-engine', async (req) => {
         'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
       },
       body: JSON.stringify({ event: 'delivery.assigned', delivery_id, provider_id: providerId }),
-    })
+    }),
   );
 
-  // Schedule acceptance timeout check (ALS-45)
+  // Schedule 120s acceptance timeout (ALS-17 retry logic)
   const timerMs = isPerishable ? PERISHABLE_TIMER_MS : ACCEPTANCE_TIMER_MS;
-  if (attempt <= MAX_RETRIES) {
+  if (attempt < MAX_RETRIES) {
     EdgeRuntime.waitUntil(
-      new Promise((resolve) => setTimeout(resolve, timerMs)).then(async () => {
-        const { data: current } = await db.from('deliveries')
+      new Promise<void>((resolve) => setTimeout(resolve, timerMs)).then(async () => {
+        const { data: current } = await db
+          .from('deliveries')
           .select('status, provider_id')
-          .eq('id', delivery_id).single();
+          .eq('id', delivery_id)
+          .single();
 
-        // If still 'assigned' (provider hasn't accepted), re-run engine
         if (current?.status === 'assigned' && current.provider_id === providerId) {
           await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/decision-engine`, {
             method: 'POST',
@@ -152,20 +160,34 @@ Deno.serve(withMetrics('decision-engine', async (req) => {
             }),
           });
         }
-      })
+      }),
     );
   } else {
-    await escalateToOps(db, delivery_id, 'All 3 providers declined or timed out');
+    // attempt === MAX_RETRIES — all 3 providers timed out or declined
+    EdgeRuntime.waitUntil(
+      new Promise<void>((resolve) => setTimeout(resolve, timerMs)).then(async () => {
+        const { data: current } = await db
+          .from('deliveries')
+          .select('status, provider_id')
+          .eq('id', delivery_id)
+          .single();
+
+        if (current?.status === 'assigned' && current.provider_id === providerId) {
+          await escalateToOps(db, delivery_id, 'All 3 providers declined or timed out');
+        }
+      }),
+    );
   }
 
   return json({ assigned: true, provider_id: providerId, score: top.score });
 }));
 
 async function escalateToOps(db: any, deliveryId: string, reason: string) {
-  // Insert a note into tracking_events for ops visibility
+  await db.from('deliveries').update({ status: 'failed' }).eq('id', deliveryId);
   await db.from('tracking_events').insert({
     delivery_id: deliveryId,
-    event_type: 'note',
+    event_type: 'status_change',
+    status: 'failed',
     metadata: { ops_alert: true, reason },
   });
 }
@@ -174,7 +196,12 @@ function haversine(lat1: number, lng1: number, lat2: number, lng2: number): numb
   const R = 6371;
   const dLat = toRad(lat2 - lat1);
   const dLng = toRad(lng2 - lng1);
-  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
-function toRad(d: number) { return d * Math.PI / 180; }
+
+function toRad(d: number) {
+  return (d * Math.PI) / 180;
+}
