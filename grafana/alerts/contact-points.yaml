@@ -1,0 +1,42 @@
+# ALS-243: Grafana contact points — Termii SMS + email
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: ops-team
+    receivers:
+      - uid: ops-email
+        type: email
+        settings:
+          addresses: ops@agrilink.ng
+          subject: "[LOP Alert] {{ .GroupLabels.alertname }}"
+
+      # Termii SMS via webhook — POST to Termii send-message endpoint
+      - uid: ops-sms-termii
+        type: webhook
+        settings:
+          url: "https://api.ng.termii.com/api/sms/send"
+          httpMethod: POST
+          contentType: application/json
+          body: |
+            {
+              "to": "${TERMII_OPS_PHONE}",
+              "from": "AgriLink",
+              "sms": "[LOP] {{ .GroupLabels.alertname }}: {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}",
+              "type": "plain",
+              "api_key": "${TERMII_API_KEY}",
+              "channel": "generic"
+            }
+
+policies:
+  - orgId: 1
+    receiver: ops-team
+    group_by: ["alertname", "severity"]
+    group_wait: 30s
+    group_interval: 5m
+    repeat_interval: 4h
+    routes:
+      - receiver: ops-team
+        matchers:
+          - severity = critical
+        continue: true

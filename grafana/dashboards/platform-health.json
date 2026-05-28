@@ -1,0 +1,153 @@
+{
+  "title": "Platform Health",
+  "uid": "lop-platform-health",
+  "tags": ["lop", "edge-functions"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "fn",
+        "label": "Function",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
+        "query": "label_values({source=\"edge-functions\"}, fn)",
+        "multi": true,
+        "includeAll": true,
+        "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Request Rate (req/min)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
+      "targets": [
+        {
+          "expr": "sum by (fn) (rate({source=\"edge-functions\", fn=~\"$fn\"} | json | type=\"metric\" [$__rate_interval]) * 60)",
+          "legendFormat": "{{fn}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqpm", "color": { "mode": "palette-classic" } } }
+    },
+    {
+      "id": 2,
+      "title": "Error Rate (%)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
+      "targets": [
+        {
+          "expr": "sum by (fn) (rate({source=\"edge-functions\", fn=~\"$fn\"} | json | type=\"metric\" | error=\"true\" [$__rate_interval])) / sum by (fn) (rate({source=\"edge-functions\", fn=~\"$fn\"} | json | type=\"metric\" [$__rate_interval])) * 100",
+          "legendFormat": "{{fn}} error %"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 5 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Total Requests (last hour)",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 8, "w": 6, "h": 4 },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({source=\"edge-functions\"} | json | type=\"metric\" [1h]))",
+          "legendFormat": "Requests"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 4,
+      "title": "Total Errors (last hour)",
+      "type": "stat",
+      "gridPos": { "x": 6, "y": 8, "w": 6, "h": 4 },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({source=\"edge-functions\"} | json | type=\"metric\" | error=\"true\" [1h]))",
+          "legendFormat": "Errors"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Avg Latency (ms)",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 8, "w": 6, "h": 4 },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
+      "targets": [
+        {
+          "expr": "avg(avg_over_time({source=\"edge-functions\"} | json | type=\"metric\" | unwrap duration_ms [5m]))",
+          "legendFormat": "Avg latency"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1000 },
+              { "color": "red", "value": 3000 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Latency per Function (ms)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 12, "w": 24, "h": 8 },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
+      "targets": [
+        {
+          "expr": "avg by (fn) (avg_over_time({source=\"edge-functions\", fn=~\"$fn\"} | json | type=\"metric\" | unwrap duration_ms [$__rate_interval]))",
+          "legendFormat": "{{fn}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms" } }
+    },
+    {
+      "id": 7,
+      "title": "Edge Function Logs",
+      "type": "logs",
+      "gridPos": { "x": 0, "y": 20, "w": 24, "h": 10 },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
+      "targets": [
+        { "expr": "{source=\"edge-functions\", fn=~\"$fn\"}", "legendFormat": "" }
+      ],
+      "options": { "showTime": true, "sortOrder": "Descending" }
+    }
+  ]
+}

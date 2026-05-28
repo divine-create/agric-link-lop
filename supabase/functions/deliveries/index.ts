@@ -3,6 +3,8 @@
 
 import { corsHeaders, corsResponse, json, error } from '../_shared/cors.ts';
 import { verifyJwt, verifyApiKey, adminClient } from '../_shared/auth.ts';
+import { withMetrics } from '../_shared/metrics.ts';
+import { checkRateLimit } from '../_shared/rateLimit.ts';
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   pending:    ['assigned', 'cancelled'],
@@ -14,7 +16,7 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
   cancelled:  [],
 };
 
-Deno.serve(async (req) => {
+Deno.serve(withMetrics('deliveries', async (req) => {
   if (req.method === 'OPTIONS') return corsResponse();
 
   const url = new URL(req.url);
@@ -26,6 +28,12 @@ Deno.serve(async (req) => {
   const jwt = await verifyJwt(req);
   const apiKeyCtx = jwt ? null : await verifyApiKey(req);
   if (!jwt && !apiKeyCtx) return error('UNAUTHORIZED', 'Invalid or missing credentials', 401);
+
+  // ALS-211/222: Rate limit API key clients (JWT = internal, exempt)
+  if (apiKeyCtx) {
+    const rateLimited = await checkRateLimit(apiKeyCtx.clientId, apiKeyCtx.tier);
+    if (rateLimited) return rateLimited;
+  }
 
   const clientId = jwt?.clientId ?? apiKeyCtx?.clientId;
   const isAdmin = jwt?.role === 'admin';
@@ -204,11 +212,20 @@ Deno.serve(async (req) => {
     }
 
     await db.from('deliveries').update({ status: 'cancelled' }).eq('id', deliveryId);
+
+    EdgeRuntime.waitUntil(
+      fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/notifications`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
+        body: JSON.stringify({ event: 'delivery.cancelled', delivery_id: deliveryId }),
+      })
+    );
+
     return json({ delivery_id: deliveryId, status: 'cancelled', cancelled_at: new Date().toISOString() });
   }
 
   return error('NOT_FOUND', 'Route not found', 404);
-});
+}));
 
 function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371;
