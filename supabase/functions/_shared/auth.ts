@@ -37,11 +37,16 @@ export async function verifyJwt(req: Request): Promise<AuthContext | null> {
   };
 }
 
+export interface ApiKeyContext {
+  clientId: string;
+  tier: string;
+}
+
 /**
  * Verify incoming X-API-Key for external clients (AgriLink integration).
- * Checks the hashed key against the clients table.
+ * Checks the hashed key against the clients table and returns tier for rate limiting.
  */
-export async function verifyApiKey(req: Request): Promise<{ clientId: string } | null> {
+export async function verifyApiKey(req: Request): Promise<ApiKeyContext | null> {
   const apiKey = req.headers.get('X-API-Key');
   if (!apiKey) return null;
 
@@ -51,10 +56,10 @@ export async function verifyApiKey(req: Request): Promise<{ clientId: string } |
   const db = adminClient();
   const { data } = await db
     .from('clients')
-    .select('id')
+    .select('id, subscription_tier')
     .eq('api_key_hash', hash)
     .eq('is_active', true)
     .single();
 
-  return data ? { clientId: data.id } : null;
+  return data ? { clientId: data.id, tier: data.subscription_tier ?? 'starter' } : null;
 }

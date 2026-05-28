@@ -8,6 +8,7 @@ import { corsHeaders, corsResponse, json, error } from '../_shared/cors.ts';
 import { verifyApiKey, adminClient } from '../_shared/auth.ts';
 import { withMetrics } from '../_shared/metrics.ts';
 import { healthCheck } from '../_shared/health.ts';
+import { checkRateLimit } from '../_shared/rateLimit.ts';
 
 const E164_REGEX = /^\+[1-9]\d{7,14}$/;
 
@@ -67,6 +68,10 @@ Deno.serve(withMetrics('external-api', async (req) => {
   // All remaining routes require API key auth
   const apiCtx = await verifyApiKey(req);
   if (!apiCtx) return error('UNAUTHORIZED', 'Invalid or missing X-API-Key', 401);
+
+  // ALS-211/222: Enforce per-tier rate limits
+  const rateLimited = await checkRateLimit(apiCtx.clientId, apiCtx.tier);
+  if (rateLimited) return rateLimited;
 
   const clientId = apiCtx.clientId;
 

@@ -1,7 +1,8 @@
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key, x-idempotency-key',
   'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
+  'Access-Control-Expose-Headers': 'x-ratelimit-limit-minute, x-ratelimit-remaining-minute, x-ratelimit-limit-day, x-ratelimit-remaining-day, retry-after, x-idempotent-replayed',
 };
 
 export function corsResponse(): Response {

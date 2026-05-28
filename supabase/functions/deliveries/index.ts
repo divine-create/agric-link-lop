@@ -4,6 +4,7 @@
 import { corsHeaders, corsResponse, json, error } from '../_shared/cors.ts';
 import { verifyJwt, verifyApiKey, adminClient } from '../_shared/auth.ts';
 import { withMetrics } from '../_shared/metrics.ts';
+import { checkRateLimit } from '../_shared/rateLimit.ts';
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   pending:    ['assigned', 'cancelled'],
@@ -27,6 +28,12 @@ Deno.serve(withMetrics('deliveries', async (req) => {
   const jwt = await verifyJwt(req);
   const apiKeyCtx = jwt ? null : await verifyApiKey(req);
   if (!jwt && !apiKeyCtx) return error('UNAUTHORIZED', 'Invalid or missing credentials', 401);
+
+  // ALS-211/222: Rate limit API key clients (JWT = internal, exempt)
+  if (apiKeyCtx) {
+    const rateLimited = await checkRateLimit(apiKeyCtx.clientId, apiKeyCtx.tier);
+    if (rateLimited) return rateLimited;
+  }
 
   const clientId = jwt?.clientId ?? apiKeyCtx?.clientId;
   const isAdmin = jwt?.role === 'admin';
